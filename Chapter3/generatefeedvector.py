@@ -1,7 +1,14 @@
 # coding: utf-8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+# 解析RSS
 import feedparser
 # 正则
 import re
+# 中文分词
+import jieba 
 
 
 # 返回一个RSS订阅源的标题和包含单词计数情况的字典
@@ -21,17 +28,22 @@ def getwordcounts(url):
 			wc.setdefault(word, 0)
 			wc[word] += 1
 
-	return d.feed.title.wc
+	return d.feed.title, wc
 
 def getwords(html):
 	# 去除所有HTML标记
 	txt = re.compile(r'<[^>]+>').sub('', html)
 
+	# 利用jieba切分词汇
+	algor = jieba.cut(txt,cut_all=True)
+
+	return [tok.lower() for tok in algor if tok!='']
+
 	# 利用所有非字母字符拆分出单词
-	words = re.compile(r'[^A-Z^a-z]+').split(txt)
+	#words = re.compile(r'[^A-Z^a-z]+').split(txt)
 
 	# 转化成小写形式
-	return [word.lower() for word in words if word != '']
+	#return [word.lower() for word in words if word != '']
 
 
 apcount = {}
@@ -48,7 +60,7 @@ for feedurl in feedlist:
 			apcount[word] += 1
 
 # 统计高频词
-wordlist = {}
+wordlist = []
 for w, bc in apcount.items():
 	frac = float(bc) / len(feedlist)
 	if frac > 0.1 and frac < 0.5: wordlist.append(w)
@@ -56,7 +68,7 @@ for w, bc in apcount.items():
 out = file('blogdata.txt', 'w')
 out.write('Blog')
 # 每一列对应一个单词
-for word in wordlist: out.write('\t%s' % word)
+for word in wordlist: out.write('\t%s' % word.strip())
 out.write('\n')
 for blog, wc in wordcounts.items():
 	# 每一行对应一个博客名
